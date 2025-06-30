@@ -57,13 +57,14 @@ class simplexAlgorithm:
             else:
                 #creates powerset with current set working with, i.e. {1,2,3} = {1},{2},{3},{1,2},{2,3},{1,3},{1,2,3}
                 currentPowerSet = self.createPowerSet(subsets)
+                currentPowerSet.discard(frozenset())
                 #now we have all required sets that must be in the complex to make this certain set valid in the complex
                 #retrieve the missing sets from the complex
                 tempSet = currentPowerSet - self.inputSet
                 #missingPartsSet now contains all potential missing parts required for the complex to be valid with the current set
-                print("Added ", list(tempSet), " to complex")
-                self.missingPartsSet.update(tempSet)
-
+                if len(tempSet) != 0:
+                    print("Added ", list(tempSet), " to complex")
+                    self.missingPartsSet.update(tempSet)
                 '''
                 #gives us desired sets of the size we want to check, i.e. {1,2,3} = {1},{2},{3},{1,2},{2,3},{1,3},{1,2,3} with
                 #size 2 gives us {1,2},{2,3},{1,3}
@@ -93,12 +94,14 @@ class simplexAlgorithm:
         S = self.developSetFromSize()
         #create power set based off inputted size
         powerSetOfS = self.createPowerSet(S)
+        powerSetOfS.discard(frozenset())
         #sort power set to work large to small
         sortedPowerSet = sorted(powerSetOfS, key=self.sizeOfSubset, reverse=True)
         #for any S' in P(S)
         for sPrime in sortedPowerSet:
             #create P(S')
             powerSetOfsPrime = self.createPowerSet(sPrime)
+            powerSetOfsPrime.discard(frozenset())
             #create P(S') - {S'}
             workingSet = powerSetOfsPrime - {sPrime}
             #check P(S')-{S'} is a subset of X
