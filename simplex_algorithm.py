@@ -16,6 +16,7 @@ class simplexAlgorithm:
     finalFace = set()
     int = 1
     currentTemp = set()
+    missingForFlag = set()
 
     def __init__(self, inputSet, inputSize):
         self.inputSet = set(frozenset(s) for s in inputSet)
@@ -89,13 +90,8 @@ class simplexAlgorithm:
         but X is still missing {3}, so we need to run it again to find whats missing
         I believe the new powerset system with disjoint and union work better, and could solve this problem
         '''
-        for x in self.finalFace:
-            self.currentTemp.add(self.int)
-            self.int += 1
-        print("added ", list(self.currentTemp), "to set")
-        self.missingPartsSet |= self.currentTemp
-
         self.inputSet |= self.missingPartsSet
+        print(self.inputSet)
         return self.inputSet
     '''
     Let S be a set, X is flag if:
@@ -120,9 +116,9 @@ class simplexAlgorithm:
             if workingSet.issubset(self.inputSet):
                 #S' in X
                 if sPrime not in self.inputSet:
-                    print("Complex is not flag!")
-                    return
-        print("Complex is flag!")
+                    self.missingForFlag.add(sPrime)
+                    print("Complex is not flag! added ", sPrime)
+        return self.missingForFlag
 
 
 
