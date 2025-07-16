@@ -13,6 +13,9 @@ class simplexAlgorithm:
     powerSet = set()
     missingPartsSet = set()
     mainSet = set()
+    finalFace = set()
+    int = 1
+    currentTemp = set()
 
     def __init__(self, inputSet, inputSize):
         self.inputSet = set(frozenset(s) for s in inputSet)
@@ -42,6 +45,8 @@ class simplexAlgorithm:
             currentSetAsList = list(subsets)
             #attatches variable to size of set
             sizeOfCurrentSet = len(subsets)
+            if sizeOfCurrentSet == 1:
+                self.finalFace.add(subsets)
             #deal with case of sets of size {x,y}
             if sizeOfCurrentSet == 2:
                 #walk through current set per element
@@ -75,7 +80,8 @@ class simplexAlgorithm:
                     if x not in self.inputSet:
                         print("Added ", x, " to complex")
                         self.missingPartsSet | x
-                '''
+             
+               '''
         '''
         done finding missing pieces, but what if the missing pieces are missing pieces in the complex
         i.e. X = {{1},{2},{1,2},{1,2,3}}
@@ -83,6 +89,12 @@ class simplexAlgorithm:
         but X is still missing {3}, so we need to run it again to find whats missing
         I believe the new powerset system with disjoint and union work better, and could solve this problem
         '''
+        for x in self.finalFace:
+            self.currentTemp.add(self.int)
+            self.int += 1
+        print("added ", list(self.currentTemp), "to set")
+        self.missingPartsSet |= self.currentTemp
+
         self.inputSet |= self.missingPartsSet
         return self.inputSet
     '''
