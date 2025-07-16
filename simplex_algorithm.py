@@ -14,9 +14,11 @@ class simplexAlgorithm:
     missingPartsSet = set()
     mainSet = set()
     finalFace = set()
-    int = 1
+    int = 0
     currentTemp = set()
     missingForFlag = set()
+    endFace = set()
+    full = set()
 
     def __init__(self, inputSet, inputSize):
         self.inputSet = set(frozenset(s) for s in inputSet)
@@ -46,8 +48,8 @@ class simplexAlgorithm:
             currentSetAsList = list(subsets)
             #attatches variable to size of set
             sizeOfCurrentSet = len(subsets)
-            if sizeOfCurrentSet == 1:
-                self.finalFace.add(subsets)
+
+
             #deal with case of sets of size {x,y}
             if sizeOfCurrentSet == 2:
                 #walk through current set per element
@@ -90,8 +92,10 @@ class simplexAlgorithm:
         but X is still missing {3}, so we need to run it again to find whats missing
         I believe the new powerset system with disjoint and union work better, and could solve this problem
         '''
+
         self.inputSet |= self.missingPartsSet
-        
+
+
         return self.inputSet
     '''
     Let S be a set, X is flag if:
@@ -107,17 +111,23 @@ class simplexAlgorithm:
         sortedPowerSet = sorted(powerSetOfS, key=self.sizeOfSubset, reverse=True)
         #for any S' in P(S)
         for sPrime in sortedPowerSet:
-            #create P(S')
-            powerSetOfsPrime = self.createPowerSet(sPrime)
-            powerSetOfsPrime.discard(frozenset())
-            #create P(S') - {S'}
-            workingSet = powerSetOfsPrime - {sPrime}
-            #check P(S')-{S'} is a subset of X
-            if workingSet.issubset(self.inputSet):
-                #S' in X
-                if sPrime not in self.inputSet:
-                    self.missingForFlag.add(sPrime)
-                    print("Complex is not flag! added ", sPrime)
+            if self.sizeOfSubset(sPrime) > 2:
+                #create P(S')
+                powerSetOfsPrime = self.createPowerSet(sPrime)
+                powerSetOfsPrime.discard(frozenset())
+                #create P(S') - {S'}
+                workingSet = powerSetOfsPrime - {sPrime}
+                #check P(S')-{S'} is a subset of X
+                if workingSet.issubset(self.inputSet):
+                    #S' in X
+                    if sPrime not in self.inputSet:
+                        self.missingForFlag.add(sPrime)
+                        print("Complex is not flag! added ", sPrime)
+
+        if S.isdisjoint(self.inputSet):
+            print("added ", list(frozenset(S)), " to make it flag")
+            self.missingForFlag.add(frozenset(S))
+
         print("flag!")
         return self.missingForFlag
 
