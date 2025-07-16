@@ -118,6 +118,7 @@ class simplexAlgorithm:
                 if sPrime not in self.inputSet:
                     self.missingForFlag.add(sPrime)
                     print("Complex is not flag! added ", sPrime)
+        print("flag!")
         return self.missingForFlag
 
 
