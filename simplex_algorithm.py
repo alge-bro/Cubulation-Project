@@ -91,7 +91,7 @@ class simplexAlgorithm:
         I believe the new powerset system with disjoint and union work better, and could solve this problem
         '''
         self.inputSet |= self.missingPartsSet
-        print(self.inputSet)
+        
         return self.inputSet
     '''
     Let S be a set, X is flag if:
