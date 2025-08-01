@@ -77,18 +77,6 @@ class simplexAlgorithm:
                     if sPrime not in self.inputSet:
                         self.inputSet.add(sPrime)
                         print("Complex is not flag! added ", sPrime)
-        '''
-        for s in self.inputSet:
-            if len(s) == 1:
-                sizeOneSet.add(s)
-        sortedSet = sorted(self.inputSet, key = self.sizeOfSubset, reverse=False)
-        for setX in sortedSet:
-            for certainSizeSet in sortedSet:
-                if(len(setX) == len(certainSizeSet)):
-                    currentSet.add(certainSizeSet)
-                if(len(setX)+1 == len(certainSizeSet)):
-                    comparisonSet.add(certainSizeSet)
-        '''
 
 
 
