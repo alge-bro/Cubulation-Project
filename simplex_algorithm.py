@@ -13,6 +13,7 @@ check that X' is flag
 class simplexAlgorithm:
     setFromSize = set()
     powerSet = set()
+    returnSet = set()
     #missingForFlag = set()
 
     def __init__(self, inputSet, inputSize):
@@ -20,6 +21,7 @@ class simplexAlgorithm:
         self.inputSize = inputSize
         self.setFromSize = set()
         self.powerSet = set()
+        self.returnSet = set()
 
     def developSetFromSize(self):
         self.setFromSize.clear()
@@ -76,9 +78,11 @@ class simplexAlgorithm:
                     # S' in X
                     if sPrime not in self.inputSet:
                         self.inputSet.add(sPrime)
+                        self.returnSet.add(sPrime)
                         print("Complex is not flag! added ", sPrime)
 
 
 
-        print("flag!")
+        print("Simplex Algorithm Done")
+        return self.returnSet
         #return self.missingForFlag
