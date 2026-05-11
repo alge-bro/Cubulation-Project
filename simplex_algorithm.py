@@ -1,3 +1,4 @@
+#from sage.all import *
 from itertools import chain, combinations
 
 '''
@@ -11,23 +12,29 @@ check that X' is flag
 
 
 class simplexAlgorithm:
-    setFromSize = set()
-    powerSet = set()
-    returnSet = set()
-    #missingForFlag = set()
 
-    def __init__(self, inputSet, inputSize):
+
+    def __init__(self, inputSet, inputSize=None,vertexSet=None):
         self.inputSet = set(frozenset(s) for s in inputSet)
         self.inputSize = inputSize
         self.setFromSize = set()
         self.powerSet = set()
         self.returnSet = set()
+        self.vertexSet = set(vertexSet) if vertexSet is not None else None
 
     def developSetFromSize(self):
         self.setFromSize.clear()
-        for i in range(1, self.inputSize + 1):
-            self.setFromSize.add(i)
-        return self.setFromSize
+        if self.vertexSet is not None:
+            return set(self.vertexSet)
+        if self.inputSize is not None:
+            return set(range(1, int(self.inputSize)+1))
+
+        vertex = set()
+        for simplex in self.inputSet:
+            for vert in simplex:
+                vertex.add(vert)
+
+        return vertex
 
     def createPowerSet(self, s):
         s = sorted(s)
@@ -38,51 +45,130 @@ class simplexAlgorithm:
 
     def checkIfValidComplex(self):
         sortedSet = sorted(self.inputSet, key=self.sizeOfSubset, reverse=True)
-        #print(sortedSet)
-        for subsets in sortedSet:
-            #print(subsets)
-            currentPowerSet = self.createPowerSet(subsets)
-            currentPowerSet.discard(frozenset())
-            tempSet = currentPowerSet - self.inputSet
-            #print(tempSet)
-            if len(tempSet) != 0:
-              print("Added ", list(tempSet), " to complex")
-              self.inputSet.update(tempSet)
+        currentlyChanged = True
+        while currentlyChanged:
+            currentlyChanged = False
+            whatToAdd = set()
+            for subsets in sortedSet:
+                currentPowerSet = self.createPowerSet(subsets)
+                currentPowerSet.discard(frozenset())
+                tempSet = currentPowerSet - self.inputSet
+                if len(tempSet) != 0:
+                    print("Added ", list(tempSet), " to complex")
+                    whatToAdd.update(tempSet)
+                    currentlyChanged = True
+        self.inputSet.update(whatToAdd)
+
         return self.inputSet
 
     '''
-    Let S be a set, X is flag if:
-    For any S' in P(S) s.t. P(S') - {S'} is a subset of X, we have S' in X also
+    New code from Dr.Mangahas notes
+    '''
+    def currentBuildAdjacency(self, vertices, edges):
+        adjacentSet = {v: set() for v in vertices}
+
+        for edge in edges:
+            edgeList = list(edge)
+            if len(edgeList) == 2:
+                u = edgeList[0]
+                v = edgeList[1]
+                adjacentSet[u].add(v)
+                adjacentSet[v].add(u)
+
+        return adjacentSet
+
+    '''
+    Algorithm utilizing Bron-Kerbosch algorithm, universal fast/efficient 
+    algorithm for finding maximal cliques (thanks Bron-Kerbosch)
+    pesudocode for reference:
+    algorithm BronKerbosch2(R, P, X) is
+    if P and X are both empty then
+        report R as a maximal clique
+    choose a pivot vertex u in P ⋃ X
+    for each vertex v in P \ N(u) do
+        BronKerbosch2(R ⋃ {v}, P ⋂ N(v), X ⋂ N(v))
+        P := P \ {v}
+        X := X ⋃ {v}
+    '''
+    def bronKerboschAlgorithm(self, R, P, X, adjacent, cliques):
+        if not P and not X:
+            if len(R) >= 2:
+                cliques.append(frozenset(R))
+            return
+
+        candidatesForPivot = P | X
+
+        def pivotRank(v):
+            neighborsOfV = adjacent[v] & P
+            return len(neighborsOfV)
+
+        pivot = max(candidatesForPivot, key=pivotRank)
+
+        verticesToLoopOver = list(P-adjacent[pivot])
+
+        for v in verticesToLoopOver:
+            newR = R | {v}
+            newP = P & adjacent[v]
+            newX = X & adjacent[v]
+            self.bronKerboschAlgorithm(newR, newP, newX, adjacent, cliques)
+            P = P - {v}
+            X = X | {v}
+
+
+
+    '''
+    "Take the input of the simplicial complex, and extract its graph. 
+    Find all maximal cliques of the graph. Each maximal clique defines a 
+    simplex. For each simplex, ask whether it is in the complex.
+     Any time the answer is no corresponds to a missing simplex"
     '''
 
     def checkIfComplexIsFlag(self):
+        self.returnSet.clear()
         S = self.developSetFromSize()
-        currentSet = set()
-        comparisonSet = set()
-        flagSet = set()
-        sizeOneSet = set()
 
-        powerSetOfS = self.createPowerSet(S)
-        powerSetOfS.discard(frozenset())
-        sortedPowerSet = sorted(powerSetOfS, key=self.sizeOfSubset, reverse=False)
-        # for any S' in P(S)
-        for sPrime in sortedPowerSet:
-            if self.sizeOfSubset(sPrime) > 2:
-                # create P(S')
-                powerSetOfsPrime = self.createPowerSet(sPrime)
-                powerSetOfsPrime.discard(frozenset())
-                # create P(S') - {S'}
-                workingSet = powerSetOfsPrime - {sPrime}
-                # check P(S')-{S'} is a subset of X
-                if workingSet.issubset(self.inputSet):
-                    # S' in X
-                    if sPrime not in self.inputSet:
-                        self.inputSet.add(sPrime)
-                        self.returnSet.add(sPrime)
-                        print("Complex is not flag! added ", sPrime)
+        # only use edges actually present
+        edges = set()
+        for simplex in self.inputSet:
+            if len(simplex) == 2:
+                edges.add(simplex)
+
+        adjacent = self.currentBuildAdjacency(S, edges)
 
 
+        '''
+        New part of utilizing cliques and the bron-Kerbosch algorithm
+        '''
+        cliques = []
+        startingR = frozenset()
+        startingP = set(S)
+        startingX = set()
 
-        print("Simplex Algorithm Done")
+        self.bronKerboschAlgorithm(startingR, startingP, startingX, adjacent, cliques)
+
+        for clique in cliques:
+            cliqueAsFrozenSet = frozenset(clique)
+            cliqueInComplex = cliqueAsFrozenSet in self.inputSet
+            if not cliqueInComplex:
+                self.inputSet.add(cliqueAsFrozenSet)
+                self.returnSet.add(cliqueAsFrozenSet)
+                print(f"MORE WORK NEEDED! {sorted(cliqueAsFrozenSet)} was not found, now added!")
+
+        if not self.returnSet:
+            print("COMPLEX IS FLAG")
+
         return self.returnSet
-        #return self.missingForFlag
+
+
+
+
+
+
+
+
+
+'''
+Replaced big part of algorithm
+no longer call develop set from size, saves time
+no long creating long chains of JUST triples, focus on cliques instead
+'''
