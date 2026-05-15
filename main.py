@@ -1,6 +1,6 @@
-from sage.all import *
+#from sage.all import *
 from simplex_program.simplex_algorithm import simplexAlgorithm
-from cubulation_program.cubulation_algorithm import cubulationAlgorithm
+#from cubulation_program.cubulation_algorithm import cubulationAlgorithm
 from itertools import chain, combinations
 
 
@@ -48,6 +48,14 @@ class cubulationAlgorithm:
         self.edgeToSquare = {}
         self.cubes = []
 
+    def currentVertexSet(self):
+        verts = set()
+        for s in self.simplexSet:
+            for v in s:
+                if isinstance(v, int):
+                    verts.add(v)
+        return verts
+
     def addSquare(self, squareCycle):
         squareCycle = tuple(frozenset(x) for x in squareCycle)
 
@@ -57,6 +65,7 @@ class cubulationAlgorithm:
 
         if squareCycle not in self.squareCycles:
             self.squareCycles.append(squareCycle)
+            #print("square cycle added: ", squareCycle)
 
         self.squareComplexAsSet.add(frozenset(squareCycle))
         self.squareComplex.add(frozenset(squareCycle))
@@ -93,16 +102,22 @@ class cubulationAlgorithm:
             return None
         return square[(i+2) % 4]
 
-
     def linkComplexFromSquares(self):
-        self.simplexSet = set()
+        newSimplexSet = set()
+
         for square in self.squareComplexAsSet:
             for x in square:
                 x = frozenset(x)
-                self.simplexSet.add(x)
+                newSimplexSet.add(x)
                 for y in x:
-                    self.simplexSet.add(frozenset({y}))
+                    newSimplexSet.add(frozenset({y}))
 
+        # preserve higher simplices already discovered
+        for s in self.simplexSet:
+            if len(s) >= 3:
+                newSimplexSet.add(s)
+
+        self.simplexSet = newSimplexSet
         return self.simplexSet
 
     def freshVertexLabel(self):
@@ -214,24 +229,28 @@ class cubulationAlgorithm:
 
         return found
 
-
-    def addCubeFromCorner(self,corner):
+    def addCubeFromCorner(self, corner):
         corner = frozenset(corner)
+        print(f"\naddCubeFromCorner called on {sorted(corner)}")
+
         cube = self.newCubeRecord(corner)
 
         self.simplicialConditionAdd(corner)
         cube["corners"].add(corner)
-        self.cubeComplexFaces.add(corner)
 
         cornerEdges = self.edgesOfCorner(corner)
 
         for edge in cornerEdges:
             squares = self.edgeToSquare.get(edge, [])
-            square = squares[0] if squares else None
-            if square is not None:
-                cube["square faces"].add(frozenset(square))
-                self.cubeComplexFaces.add(frozenset(square))
-            else:
+            print(f"EDGE {sorted(edge)} is contained in {len(squares)} square(s)")
+
+            # Reuse existing squares if present
+            for sq in squares:
+                cube["square faces"].add(frozenset(sq))
+                self.cubeComplexFaces.add(frozenset(sq))
+
+
+            if len(squares) < 2:
                 cube["missing edges"].add(edge)
                 self.needToAdd.add(edge)
 
@@ -240,35 +259,33 @@ class cubulationAlgorithm:
             cube["new labels"].update(newOppositeEdge)
 
             newSquare = self.makeSquareFromEdge(edge, newOppositeEdge)
+            print(f"  adding new square from edge {sorted(edge)} -> {newSquare}")
             self.addSquare(newSquare)
 
             cube["square faces"].add(frozenset(newSquare))
             self.cubeComplexFaces.add(frozenset(newSquare))
 
         self.buildEdgeToSquareMap()
-
-        newCorners = self.inferCornersFromSeed(corner)
-
-        for newCorner in newCorners:
-            self.simplicialConditionAdd(newCorner)
-            cube["corners"].add(newCorner)
-            self.cubeComplexFaces.add(newCorner)
+        self.linkComplexFromSquares()
 
         self.cubes.append(cube)
         return cube
 
-    def runFlagCubulationRecursion(self, maxSteps=50):
+    def runFlagCubulationRecursion(self, maxSteps=10):
 
         steps = 0
 
         while steps < maxSteps:
             steps += 1
+            print("Steps: ", steps)
 
             self.buildEdgeToSquareMap()
             self.linkComplexFromSquares()
 
             currentSize = self.maxVertexLabel()
-            simplexObject = simplexAlgorithm(self.simplexSet, currentSize)
+            vertexSet = self.currentVertexSet()
+            print("current vertices are: ", sorted(vertexSet), "size: (if large thats bad!!!)", len(vertexSet))
+            simplexObject = simplexAlgorithm(self.simplexSet, vertexSet = vertexSet)
             missing = simplexObject.checkIfComplexIsFlag()
 
             missingCorners = set()
@@ -286,6 +303,7 @@ class cubulationAlgorithm:
             oldSimplexCount = len(self.simplexSet)
 
             for corner in missingCorners:
+                print("LOOK HERE CADEN (for addCube called check)")
                 self.addCubeFromCorner(corner)
 
             self.buildEdgeToSquareMap()
@@ -293,7 +311,7 @@ class cubulationAlgorithm:
 
             if len(self.squareCycles) == oldSquareCount and len(self.simplexSet) == oldSimplexCount:
                 print("no progress made, terminating program")
-                return
+                return self.cubeComplexFaces, self.simplexSet, self.needToAdd
 
         if steps >= maxSteps:
             print("recursed? too long!", maxSteps)
@@ -303,30 +321,37 @@ class cubulationAlgorithm:
 
 
 sq1 = (
-    frozenset({6,1}),
-    frozenset({2,6}),
-    frozenset({5,2}),
-    frozenset({1,5}),
+    frozenset({1,3}),
+    frozenset({2,3}),
+    frozenset({2,4}),
+    frozenset({1,4}),
 )
 sq2 = (
-    frozenset({6,3}),
+    frozenset({3,5}),
+    frozenset({4,5}),
     frozenset({4,6}),
-    frozenset({1,4}),
-    frozenset({3,1}),
+    frozenset({3,6}),
 )
 sq3 = (
-    frozenset({5,8}),
-    frozenset({7,5}),
+    frozenset({1,5}),
+    frozenset({2,5}),
+    frozenset({2,6}),
+    frozenset({1,6}),
+)
+sq4 = (
+    frozenset({1,7}),
     frozenset({2,7}),
     frozenset({8,2}),
+    frozenset({8,1}),
 )
 
-squareCycleList = [sq1, sq2, sq3]
-squareComplexAsSet = [set(sq1), set(sq2), set(sq3)]
-squareComplex = [set(sq1), set(sq2), set(sq3)]
+squareCycleList = [sq1, sq2, sq3, sq4]
+squareComplexAsSet = [set(sq1), set(sq2), set(sq3), set(sq4)]
+squareComplex = [set(sq1), set(sq2), set(sq3), set(sq4)]
 cubeComplexFaces = []
+startingSize = 8
 
-cubeObj = cubulationAlgorithm(squareComplex, squareComplexAsSet, cubeComplexFaces, 8)
+cubeObj = cubulationAlgorithm(squareComplex, squareComplexAsSet, cubeComplexFaces, startingSize)
 
 cubeObj.initializeSquareCycles(squareCycleList)
 
@@ -338,7 +363,7 @@ print("square cycles =", cubeObj.squareCycles)
 print("edge to square map =", cubeObj.edgeToSquare)
 print("intial simplex set =", cubeObj.simplexSet)
 
-simplexObj = simplexAlgorithm(cubeObj.simplexSet, cubeObj.maxVertexLabel())
+simplexObj = simplexAlgorithm(cubeObj.simplexSet, vertexSet = cubeObj.currentVertexSet())
 missing = simplexObj.checkIfComplexIsFlag()
 print("missing simplices =", missing)
 
@@ -360,7 +385,9 @@ if testCorner is not None:
     print("inferred corners from seed =", inferred)
 
 result = cubeObj.runFlagCubulationRecursion()
-print("final resutl hopefully :", result)
+print("final result hopefully :", result)
+
+
 
 
 
