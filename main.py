@@ -244,16 +244,15 @@ class cubulationAlgorithm:
             squares = self.edgeToSquare.get(edge, [])
             print(f"EDGE {sorted(edge)} is contained in {len(squares)} square(s)")
 
-            # Reuse existing squares if present
-            for sq in squares:
-                cube["square faces"].add(frozenset(sq))
-                self.cubeComplexFaces.add(frozenset(sq))
-
-
-            if len(squares) < 2:
+            # retrieve the square the edge may already be connected to
+            # Squares can either be [] or a single four tuple, thats why we check == 1
+            if len(squares) == 1:
+                cube["square faces"].add(frozenset(squares[0]))
+                self.cubeComplexFaces.add(frozenset(squares[0]))
+            else:
                 cube["missing edges"].add(edge)
                 self.needToAdd.add(edge)
-
+        # we would have, for exampl {fs{1,3},fs{3,5}}
         for edge in list(cube["missing edges"]):
             newOppositeEdge = self.freshGeneratorPair()
             cube["new labels"].update(newOppositeEdge)
@@ -261,7 +260,7 @@ class cubulationAlgorithm:
             newSquare = self.makeSquareFromEdge(edge, newOppositeEdge)
             print(f"  adding new square from edge {sorted(edge)} -> {newSquare}")
             self.addSquare(newSquare)
-
+            #cube["Square faces"] should have three squares at the end, one for each edge.
             cube["square faces"].add(frozenset(newSquare))
             self.cubeComplexFaces.add(frozenset(newSquare))
 
